@@ -36,7 +36,7 @@ if __name__ == "__main__":
     device = opt.device
     EXP_DIR = Path("Experiments", opt.experiment)
     NET_INFO_PATH = Path(EXP_DIR, "net_info.json")
-    NET_PATH = Path(EXP_DIR, f"{opt.experiment}_flow.pth")
+    NET_PATH = Path(EXP_DIR, f"{opt.experiment}_vector.pth")
     NET_INFO_FILENAME = "net_flow_info.json"
 
     N_DIM = opt.n_dim
