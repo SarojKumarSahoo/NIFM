@@ -2,8 +2,8 @@ from typing import Union
 
 import torch
 from torch import Tensor
-from vector_field import VectorField2D, VectorField3D
 
+from field import VectorField2D, VectorField3D
 from model import DecoupledTauNet
 
 
