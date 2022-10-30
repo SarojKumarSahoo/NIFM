@@ -37,7 +37,7 @@ The `--experiment=name_of_the_experiment` argument will create a `Experiments\na
 ### Fitting to Flow maps
 After the first stage, in second stage the model needs the network information from the previous stage and thus will look for it in the subfolder with the appropriate experiment name. Thus, the `--experiment` argument must be provided with the same experiment name as in the 1st stage of training. For examples:-
 ```
-os.system("python optimize_flow_map.py --data_dir=path_to_2d_vector_field_data --n_dim=2 --experiment=name_of_the_experiment")
+python optimize_flow_map.py --data_dir=path_to_2d_vector_field_data --n_dim=2 --experiment=name_of_the_experiment
 ```
 Additionally, the user can set the `min_tau` and `max_tau` (in grid units) to specify the range of time-spans the networks has to learn through the self-consistency criterion. After training is finished the model weights and the network information file `net_flow_info.json` will be saved out in the corresponding folder.
 
