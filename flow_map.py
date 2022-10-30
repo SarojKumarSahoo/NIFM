@@ -98,7 +98,7 @@ class Flowmap:
                 end = min(idx + 1000000, particle_pos.shape[0])
                 vectors = self.vector_field.get_vectors(particle_pos[start:end, :])
                 particle_pos[start:end, :] += step * torch.cat((const_t[start:end, :], vectors), dim=1)
-                if self.vector_field.n_dim == 3:
+                if self.vector_field.in_dim == 3:
                     particle_pos = self.vector_field.toroidal_map(particle_pos)
                 current_valid_particles = self.is_valid(particle_pos[start:end, 1:])
                 valid_particles[start:end] = torch.logical_and(valid_particles[start:end], current_valid_particles)
