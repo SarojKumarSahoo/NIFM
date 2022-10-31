@@ -232,7 +232,7 @@ class VectorField2D(VectorField):
             Tensor: mapped position
         """
         if not self.is_toroidal:
-            return
+            return positions
 
         for d in range(self.in_dim - 1):
             less_mask = positions[:, d + 1] < self.th_ext[d + 1, 0]
@@ -247,7 +247,7 @@ class VectorField2D(VectorField):
                     greater_mask, d + 1
                 ]
 
-            return positions
+        return positions
 
     def toroidal_subtract(self, p: Tensor, q: Tensor) -> Tensor:
         """Computes difference between two position tensors with periodic boundary condition taken into consideration.

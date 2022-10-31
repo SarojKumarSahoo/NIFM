@@ -142,7 +142,7 @@ class Flowmap:
                     )
                 neural_positions[start:end, 0] += step
                 neural_positions[start:end, 1:] = neural_spatial_position.clone()
-                if self.vector_field.n_dim == 3:
+                if self.vector_field.in_dim == 3:
                     neural_positions = self.vector_field.toroidal_map(neural_positions)
 
         return neural_positions
