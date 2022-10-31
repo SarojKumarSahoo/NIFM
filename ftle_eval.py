@@ -75,7 +75,7 @@ if __name__ == "__main__":
         plt.tick_params(left=False, right=False, labelleft=False, labelbottom=False, bottom=False)
         plt.imshow(ref_ftle_.T, cmap="RdYlBu_r", vmin=0)
         plt.colorbar()
-        plt.savefig(f"Experiments/{opt.experiment}/ref_ftle", format="png", dpi=300)
+        plt.savefig(f"Experiments/{opt.experiment}/ref_ftle.png", format="png", dpi=300)
 
     if vector_field.out_dim == 3:
         neural_ftle_ = fp.ftle3d(neural_flow_map[:, 1:], mask, opt.tau)
@@ -90,4 +90,4 @@ if __name__ == "__main__":
         plt.tick_params(left=False, right=False, labelleft=False, labelbottom=False, bottom=False)
         plt.imshow(neural_ftle_.T, cmap="RdYlBu_r", vmin=0)
         plt.colorbar()
-        plt.savefig(f"Experiments/{opt.experiment}/neural_ftle", format="png", dpi=300)
+        plt.savefig(f"Experiments/{opt.experiment}/neural_ftle.png", format="png", dpi=300)
