@@ -1,7 +1,7 @@
 # NIFM (Neural Integration-free Flow Maps)
-[Saroj Sahoo]() [Matthew Berger](https://matthewberger.github.io/)
+[Saroj Sahoo](https://github.com/SarojKumarSahoo) [Matthew Berger](https://matthewberger.github.io/)
 
-This paper contains the official code for the paper "Integration-free Learning of Flow Maps".
+This project contains the official code for the paper "Integration-free Learning of Flow Maps".
 
 ## Requirements
 The relevant libraries required to run this project are included in the `requirements.txt` file.
@@ -23,23 +23,25 @@ Assuming that the entire 2D dataset can fit into memory, our method expect a sin
 }
 ```
 
+We have further provided a script for generating an analytical vector field based on the Double Gyre. Please see the `datasets` directory.
+
 ### 3D Time-Varying Vector Field Data
-Since, most 3D time-varying data can get really large, the luxury of the storing them in memory is no longer feasible. So, our method expects files named `field_0.npy`, `field_1.npy`, ..., `field_100.npy`, where each file corresponds to a single slice and has a shape of `[3,x,y,z]`. Similar to 2D dataset, a `metadata.json` for the entire 3D dataset needs to placed in the same directory.
+Since, most 3D time-varying data can get really large, the luxury of storing them in memory is no longer feasible. In response, for 3D data our method expects files named `field_0.npy`, `field_1.npy`, ..., `field_100.npy`, where each file corresponds to a single time slice and has a shape of `[3,x,y,z]`. Similar to 2D dataset, a `metadata.json` for the entire 3D dataset needs to placed in the same directory.
 
 ### Fitting to Vectors
 After the data prep is done, fitting to the vectors can be done by running the `optimize_vectors.py` script. Below is an example:
 ```
 python optimize_vectors.py --data_dir=path_to_2d_vector_field_data --n_dim=2 --experiment=name_of_the_experiment
 ```
-The `--experiment=name_of_the_experiment` argument will create a `Experiments\name_of_the_experiment` folder within the Project Directory where all the relevant files will be written out for this experiment. By default, we use a compression level of 10 for 2D time-varying datasets, however this can be changed using the `--compression_ratio` argument. Similarly, other network related arguments can be explored. After the training is done, a file `Experiments\name_of_the_experiment\net_info.json` containing the network information will written out along with the saved model weights in the same directory.
+The `--experiment=name_of_the_experiment` argument will create a `Experiments\name_of_the_experiment` folder, local to where it is run, where all the relevant files will be written out for this experiment. By default, we use a compression level of 10 for 2D time-varying datasets, however this can be changed using the `--compression_ratio` argument. Similarly, other network related arguments can be explored. After the training is done, a file `Experiments\name_of_the_experiment\net_info.json` containing the network information will written out along with the saved model weights in the same directory.
 
 
 ### Fitting to Flow maps
-After the first stage, in second stage the model needs the network information from the previous stage and thus will look for it in the subfolder with the appropriate experiment name. Thus, the `--experiment` argument must be provided with the same experiment name as in the 1st stage of training. For examples:-
+After the first stage, in second stage the model needs the network information from the previous stage and thus will look for it in the subfolder with the appropriate experiment name. Thus, the `--experiment` argument must be provided with the same experiment name as in the 1st stage of training. For example:-
 ```
 python optimize_flow_map.py --data_dir=path_to_2d_vector_field_data --n_dim=2 --experiment=name_of_the_experiment
 ```
-Additionally, the user can set the `min_tau` and `max_tau` (in grid units) to specify the range of time-spans the networks has to learn through the self-consistency criterion. After training is finished the model weights and the network information file `net_flow_info.json` will be saved out in the corresponding folder.
+Additionally, the user can set the `min_tau` and `max_tau` (in grid units) to specify the range of time spans the networks has to learn through the self-consistency criterion. After training is finished the model weights and the network information file `net_flow_info.json` will be saved out in the corresponding folder.
 
 ### Quantitative and Qualitative evaluation
 The evaluation of the network is straightforward and can be done using the following scripts :-
@@ -51,5 +53,5 @@ And, the following script can be used to compute the ground truth FTLE as well a
 
 ```python ftle_eval.py --data_dir=path_to_2d_vector_field_data --experiment=name_of_the_experiment --start_time=0 --tau=1 --grid_steps=16```
 
-The `--grid_steps` arguments controls how many steps in grid units the models takes to compose the flow map of time-span set by `--tau` argument.
+The `--grid_steps` arguments controls how many steps in grid units the models takes to compose the flow map of time span set by `--tau` argument.
 
