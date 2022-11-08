@@ -1,6 +1,8 @@
 # NIFM (Neural Integration-free Flow Maps)
 [Saroj Sahoo](https://github.com/SarojKumarSahoo) [Matthew Berger](https://matthewberger.github.io/)
 
+[arXiv link](https://arxiv.org/abs/2211.03192)
+
 This project contains the official code for the paper "Integration-free Learning of Flow Maps".
 
 ## Requirements
@@ -46,12 +48,17 @@ Additionally, the user can set the `min_tau` and `max_tau` (in grid units) to sp
 ### Quantitative and Qualitative evaluation
 The evaluation of the network is straightforward and can be done using the following scripts :-
 
-```python quantitative_eval.py --data_dir=path_to_2d_vector_field_data --experiment=name_of_the_experiment```
+```
+python quantitative_eval.py --data_dir=path_to_2d_vector_field_data --experiment=name_of_the_experiment
+```
+
 The above script will evaluate our method quantitatively for varying start times and time-spans.
 
 And, the following script can be used to compute the ground truth FTLE as well as FTLE using our method.
 
-```python ftle_eval.py --data_dir=path_to_2d_vector_field_data --experiment=name_of_the_experiment --start_time=0 --tau=1 --grid_steps=16```
+```
+python ftle_eval.py --data_dir=path_to_2d_vector_field_data --experiment=name_of_the_experiment --start_time=0 --tau=1 --grid_steps=16
+```
 
 The `--grid_steps` arguments controls how many steps in grid units the models takes to compose the flow map of time span set by `--tau` argument.
 
