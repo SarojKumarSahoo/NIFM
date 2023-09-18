@@ -41,8 +41,9 @@ if __name__ == "__main__":
 
     N_DIM = opt.n_dim
 
-    vector_field = VectorField2D(opt.data_dir, opt.device) if N_DIM == 2 else VectorField3D(opt.data_dir, opt.device)
-
+    vector_field = (
+        VectorField2D(opt.data_dir, device=opt.device) if N_DIM == 2 else VectorField3D(opt.data_dir, device=opt.device)
+    )
     net_info = json.load(open(NET_INFO_PATH, "r"))
     net = DecoupledTauNet(
         net_info["in_dim"],

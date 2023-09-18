@@ -5,13 +5,14 @@ from typing import List, Union
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from torch import Tensor
 
 
 class VectorField(ABC):
     """This is an abstract class for the vector field dataset."""
 
-    def __init__(self, data_dir: str, device: str):
+    def __init__(self, data_dir: str, device: str = 'cuda'):
         self.data_dir = data_dir
         self.device = device
         self._metadata = json.load(open(Path(f"{data_dir}", "metadata.json"), "r"))
@@ -177,7 +178,7 @@ class VectorField(ABC):
 
 
 class VectorField2D(VectorField):
-    def __init__(self, data_dir: str, device: str):
+    def __init__(self, data_dir: str, cf: int = None, device: str = 'cuda'):
         super().__init__(data_dir, device)
         self._in_dim = 3
         self._out_dim = 2
@@ -195,6 +196,8 @@ class VectorField2D(VectorField):
             np.load(Path(f"{self.data_dir}", "field.npy")),
             dtype=torch.float32,
         ).to(self.device)
+        if cf is not None:
+            self.field = self.field[:, ::cf, ::cf, ::cf]
 
     @property
     def dx(self) -> float:
@@ -301,7 +304,16 @@ class VectorField2D(VectorField):
         Returns:
             Tensor: vectors at the given positions
         """
-        return self.linear_interpolation(positions.to(self.device), self.field.to(self.device))
+        normalized_pos = self.map_physical_to_net(positions.clone())
+        grid = normalized_pos.unsqueeze(0).unsqueeze(2).unsqueeze(3)
+        interpolated_vectors = F.grid_sample(
+            self.field.permute(0, 3, 2, 1).unsqueeze(0).to(self.device),
+            grid.to(self.device),
+            padding_mode='zeros',
+            align_corners=True,
+        )
+        interpolated_vectors = interpolated_vectors[0, :, :, 0, 0].T
+        return interpolated_vectors
 
     def get_random_time_bound_coords(self, n_samples: int) -> Tensor:
         pass

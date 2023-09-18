@@ -64,7 +64,7 @@ class Flowmap:
         valid_mask = valid_mask.prod(dim=1).to(torch.bool)
         return valid_mask
 
-    def euler_flowmap(self) -> Tuple[Tensor, Tensor]:
+    def euler_flowmap(self, step_size: float = 0.25) -> Tuple[Tensor, Tensor]:
         """Computes the flow map using euler integration. Each particle advects 4 times within a single grid-voxel
         and the time-span of integration for all the particles is expected to be the same, if not same then all
         the particles are integrated for the maximum time-span.
@@ -74,7 +74,7 @@ class Flowmap:
             the entire integration time-span.
         """
         max_tau = self.tau.max() if isinstance(self.tau, Tensor) else self.tau
-        ref_step_size = 0.25 * self.vector_field.dt
+        ref_step_size = step_size * self.vector_field.dt
         n_ref_steps = int(max_tau // ref_step_size)
         if max_tau != (n_ref_steps * ref_step_size):
             last_step = max_tau - (n_ref_steps * ref_step_size)
@@ -102,6 +102,78 @@ class Flowmap:
                     particle_pos = self.vector_field.toroidal_map(particle_pos)
                 current_valid_particles = self.is_valid(particle_pos[start:end, 1:])
                 valid_particles[start:end] = torch.logical_and(valid_particles[start:end], current_valid_particles)
+        ic.append(particle_pos.clone())
+
+        return torch.stack(ic, dim=1), valid_particles
+
+    def rk4_flowmap(self, step_size: float = 0.25) -> Tuple[Tensor, Tensor]:
+        """Computes the flow map using rk4 integration. Each particle advects 4 times within a single grid-voxel
+        and the time-span of integration for all the particles is expected to be the same, if not same then all
+        the particles are integrated for the maximum time-span.
+
+        Returns:
+            Tuple[Tensor, Tensor]: Flow map and a mask indicating wether a given particle stayed in the domain for
+            the entire integration time-span.
+        """
+        print("step size : ", step_size)
+        max_tau = self.tau.max() if isinstance(self.tau, Tensor) else self.tau
+        ref_step_size = step_size * self.vector_field.dt
+        n_ref_steps = int(max_tau // ref_step_size)
+        if max_tau != (n_ref_steps * ref_step_size):
+            last_step = max_tau - (n_ref_steps * ref_step_size)
+            n_ref_steps += 1
+        else:
+            last_step = ref_step_size
+        all_steps = ref_step_size * torch.ones(n_ref_steps).to(self.vector_field.device)
+        all_steps[-1] = last_step
+        particle_pos = self.positions.clone()
+        valid_particles = torch.ones(particle_pos.shape[0], dtype=torch.bool, device=self.vector_field.device)
+        const_t = torch.ones((particle_pos.shape[0], 1), dtype=particle_pos.dtype, device=particle_pos.device)
+
+        ic = [self.positions.clone()]
+        for _, step in enumerate(all_steps):
+            if particle_pos.shape[1] == 4:
+                t = particle_pos[0, 0]
+                grid_t = self.vector_field.map_phyiscal_time_to_grid(t)
+                self.vector_field.set_fields(np.floor(grid_t.item()))
+            for idx in range(0, particle_pos.shape[0], 1000000):
+                start = idx
+                end = min(idx + 1000000, particle_pos.shape[0])
+                k1 = torch.cat(
+                    (const_t[start:end, :], self.vector_field.get_vectors(particle_pos[start:end, :])), dim=1
+                )
+                y1 = particle_pos[start:end, :] + 0.5 * step * k1
+                if self.vector_field.in_dim == 3:
+                    y1 = self.vector_field.toroidal_map(y1)
+                y1_valid_particles = self.is_valid(y1[start:end, 1:])
+
+                k2 = torch.cat((const_t[start:end, :], self.vector_field.get_vectors(y1)), dim=1)
+                y2 = particle_pos[start:end, :] + 0.5 * step * k2
+                if self.vector_field.in_dim == 3:
+                    y2 = self.vector_field.toroidal_map(y2)
+                y2_valid_particles = self.is_valid(y2[start:end, 1:])
+
+                k3 = torch.cat((const_t[start:end, :], self.vector_field.get_vectors(y2)), dim=1)
+                y3 = particle_pos[start:end, :] + step * k3
+                if self.vector_field.in_dim == 3:
+                    y3 = self.vector_field.toroidal_map(y3)
+                y3_valid_particles = self.is_valid(y3[start:end, 1:])
+
+                k4 = torch.cat((const_t[start:end, :], self.vector_field.get_vectors(y3)), dim=1)
+                particle_pos[start:end, :] += (step / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
+
+                if self.vector_field.in_dim == 3:
+                    particle_pos = self.vector_field.toroidal_map(particle_pos)
+                current_valid_particles = self.is_valid(particle_pos[start:end, 1:])
+                all_valid_particles = torch.stack(
+                    (
+                        y1_valid_particles,
+                        y2_valid_particles,
+                        y3_valid_particles,
+                        current_valid_particles,
+                    )
+                ).all(dim=0)
+                valid_particles[start:end] = torch.logical_and(valid_particles[start:end], all_valid_particles)
         ic.append(particle_pos.clone())
 
         return torch.stack(ic, dim=1), valid_particles
@@ -178,7 +250,7 @@ class Flowmap:
             valid_particles = torch.logical_and(valid_particles, current_valid_particles)
         return particle, valid_particles
 
-    def neural_irregular_euler_integration_flow_map(self, net: DecoupledTauNet, grid_steps: int) -> Tensor:
+    def neural_irregular_integration_flow_map(self, net: DecoupledTauNet, grid_steps: int) -> Tensor:
         """Computes flow maps using the network for varying integration duration
 
         Returns:
@@ -320,7 +392,7 @@ class Flowmap:
         cauchy_green_tensor = torch.bmm(torch.transpose(jacobian, 1, 2), jacobian)
         eig_val, _ = torch.linalg.eigh(cauchy_green_tensor)
         ftle = torch.log(torch.sqrt(torch.max(eig_val, dim=1).values))
-
+        
         return ftle.numpy()
 
     def ftle3d(self, flow_map: Union[Tensor, np.ndarray], valid_mask: Tensor, tau: float) -> np.ndarray:

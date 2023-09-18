@@ -40,7 +40,9 @@ if __name__ == "__main__":
     NET_INFO_FILENAME = "net_info.json"
     N_DIM = opt.n_dim
 
-    vector_field = VectorField2D(opt.data_dir, opt.device) if N_DIM == 2 else VectorField3D(opt.data_dir, opt.device)
+    vector_field = (
+        VectorField2D(opt.data_dir, device=opt.device) if N_DIM == 2 else VectorField3D(opt.data_dir, device=opt.device)
+    )
 
     # generate network params
     target_n = int((vector_field.size * opt.n_dim) / opt.compression_ratio)

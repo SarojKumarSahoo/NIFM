@@ -199,7 +199,7 @@ class DecoupledTauNet(nn.Module):
         for idx, layer in enumerate(self.vec_mlp):
             t_tau = torch.tanh(tau * self.tau_params[idx])
             if idx == 0:
-                out = out + t_tau * self.act(layer(vec_features) * self.tau_mlp(tau_features))
+                out = out + t_tau * self.act(layer(out) * self.tau_mlp(tau_features))
             else:
                 out = out + t_tau * self.act(layer(out))
         return physical_coords + self.last_layer(out)

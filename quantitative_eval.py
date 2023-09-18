@@ -54,7 +54,7 @@ if __name__ == "__main__":
                 ) * torch.rand(n).to(device)
 
             ref_fp = Flowmap(vector_field, copy.deepcopy(pos), tau)
-            ref_flowmap, ref_valid_mask = ref_fp.euler_flowmap()
+            ref_flowmap, ref_valid_mask = ref_fp.rk4_flowmap()
             ref_flowmap = ref_flowmap[ref_valid_mask, :, :]
 
             for tau_step in tau_steps:

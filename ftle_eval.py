@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     fp = Flowmap(vector_field, positions.clone(), opt.tau)
     tick = time.perf_counter()
-    ref_flow_map, mask = fp.euler_flowmap()
+    ref_flow_map, mask = fp.rk4_flowmap()
     tock = time.perf_counter()
     logger.info(f"Referece Flow Map computation Time : {tock-tick}")
 
