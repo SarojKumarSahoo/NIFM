@@ -56,7 +56,7 @@ if __name__ == "__main__":
     positions = torch.cat((t_coords, lattice), dim=1)
 
     fp = Flowmap(vector_field, positions.clone(), opt.tau)
-    ref_flow_map, mask = fp.rk4_flowmap(step_size=0.1)
+    ref_flow_map, mask = fp.euler_flowmap(step_size=0.1)
     del fp
 
     vector_field = VectorField2D(opt.data_dir, cf=2, device=device)
@@ -66,6 +66,7 @@ if __name__ == "__main__":
 
     rk_error_img = torch.norm(ref_flow_map[:, -1, 1:] - rk4_flow_map[:, -1, 1:], dim=1)/vector_field.diag
     rk_error_img = rk_error_img.reshape(vector_field.res[1:]).detach().cpu().numpy()
+    
 
     fp = Flowmap(vector_field, positions.clone(), opt.tau)
     euler_flow_map, _ = fp.euler_flowmap(step_size=opt.grid_steps)
@@ -83,21 +84,17 @@ if __name__ == "__main__":
     neural_error_img = neural_error_img.reshape(vector_field.res[1:]).detach().cpu().numpy()
 
     ref_ftle_ = fp.ftle(ref_flow_map[:, -1, 1:], mask, opt.tau)
-    ref_ftle_ = ref_ftle_.reshape(vector_field.res[1:], order="F")
     save_fig(ref_ftle_, "ref_ftle")
 
     rk4_ftle_ = fp.ftle(rk4_flow_map[:, -1, 1:], mask, opt.tau)
-    rk4_ftle_ = rk4_ftle_.reshape(vector_field.res[1:], order="F")
     save_fig(rk4_ftle_, "rk4_ftle")
     save_fig(rk_error_img, "rk_error", cmap="viridis")
 
     euler_ftle_ = fp.ftle(euler_flow_map[:, -1, 1:], mask, opt.tau)
-    euler_ftle_ = euler_ftle_.reshape(vector_field.res[1:], order="F")
     save_fig(euler_ftle_, "euler_ftle")
     save_fig(euler_error_img, "euler_error", cmap="viridis")
 
     neural_ftle_ = fp.ftle(neural_flow_map[:, 1:], mask, opt.tau)
-    neural_ftle_ = neural_ftle_.reshape(vector_field.res[1:], order="F")
     save_fig(neural_ftle_, "neural_ftle")
     save_fig(neural_error_img, "neural_error", cmap="viridis")
 

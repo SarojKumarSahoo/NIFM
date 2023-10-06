@@ -105,4 +105,4 @@ if __name__ == "__main__":
                 metrics["euler_time"] = float(euler_time)
                 metrics["experiment"] = net_info
                 eval_data.append(metrics)
-    json.dump(eval_data, open(Path("Experiments", opt.experiment, f"{opt.experiment}_eval.json"), "w"))
+    json.dump(eval_data, open(Path("Experiments", opt.experiment, f"{opt.experiment}_eval_final.json"), "w"))

@@ -57,11 +57,9 @@ class Flowmap:
         Returns:
             Tensor: A mask indicating wether a given position is valid or not
         """
-        valid_mask = torch.logical_and(
-            torch.le(positions, self.vector_field.th_ext[1:, 1].unsqueeze(0)),
-            torch.ge(positions, self.vector_field.th_ext[1:, 0].unsqueeze(0)),
-        )
-        valid_mask = valid_mask.prod(dim=1).to(torch.bool)
+        valid_x = torch.logical_and(positions[:, 0] >= self.vector_field.th_ext[1, 0], positions[:, 0] <= self.vector_field.th_ext[1, 1])
+        valid_y = torch.logical_and(positions[:, 1] >= self.vector_field.th_ext[2, 0], positions[:, 1] <= self.vector_field.th_ext[2, 1])
+        valid_mask = torch.logical_and(valid_x, valid_y)
         return valid_mask
 
     def euler_flowmap(self, step_size: float = 0.25) -> Tuple[Tensor, Tensor]:
@@ -369,8 +367,9 @@ class Flowmap:
             Check ftle_eval.py for detailed usage.
         """
         if isinstance(flow_map, Tensor):
-            flow_map = flow_map.view(self.vector_field.res[1], self.vector_field.res[2], self.vector_field._out_dim)
             flow_map = flow_map.detach().cpu().numpy() if flow_map.is_cuda else flow_map.numpy()
+            valid_mask = valid_mask.detach().cpu().numpy() if valid_mask.is_cuda else valid_mask.numpy()
+            flow_map = flow_map.reshape(self.vector_field.res[1], self.vector_field.res[2], self.vector_field._out_dim)
         else:
             flow_map = flow_map.reshape(self.vector_field.res[1], self.vector_field.res[2], self.vector_field._out_dim)
 
@@ -385,14 +384,17 @@ class Flowmap:
             dfu_dy, dfu_dx = np.gradient(flow_map[:, :, 0], self.vector_field.dy, self.vector_field.dx)
             dfv_dy, dfv_dx = np.gradient(flow_map[:, :, 1], self.vector_field.dy, self.vector_field.dx)
 
-        du = np.stack((dfu_dx, dfu_dy), axis=0).reshape(2, -1, order="F")
-        dv = np.stack((dfv_dx, dfv_dy), axis=0).reshape(2, -1, order="F")
+        du = np.stack((dfu_dx, dfu_dy), axis=0).reshape(2, -1)
+        dv = np.stack((dfv_dx, dfv_dy), axis=0).reshape(2, -1)
         jacobian = np.stack((du, dv), axis=0)
         jacobian = torch.from_numpy(jacobian).permute(2, 0, 1)
         cauchy_green_tensor = torch.bmm(torch.transpose(jacobian, 1, 2), jacobian)
-        eig_val, _ = torch.linalg.eigh(cauchy_green_tensor)
-        ftle = torch.log(torch.sqrt(torch.max(eig_val, dim=1).values))
-        
+        eig_vals, _ = torch.linalg.eigh(cauchy_green_tensor)
+        eig_vals = torch.sqrt(torch.max(eig_vals, dim=1).values)
+        smallest_valid_eig_val = eig_vals[valid_mask].min()
+        eig_vals[~valid_mask] = smallest_valid_eig_val
+        ftle = (1 / tau) * torch.log(eig_vals)
+        ftle = ftle.view(self.vector_field.res[1], self.vector_field.res[2])
         return ftle.numpy()
 
     def ftle3d(self, flow_map: Union[Tensor, np.ndarray], valid_mask: Tensor, tau: float) -> np.ndarray:
